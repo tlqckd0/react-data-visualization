@@ -1,78 +1,101 @@
-import React, { useState } from 'react';
-import ChartTest from './chart/ChartTest';
-import ChartInteractions from './chart/ChartInteractions';
+import React, { useState,useEffect } from 'react';
 
-const OriginData = [
-    {
-        name: 'Page A',
-        uv: 4000,
-        pv: 2400,
-        amt: 2400,
-    },
-    {
-        name: 'Page B',
-        uv: 3000,
-        pv: 1398,
-        amt: 2210,
-    },
-    {
-        name: 'Page C',
-        uv: 2000,
-        pv: 9800,
-        amt: 2290,
-    },
-    {
-        name: 'Page D',
-        uv: 2780,
-        pv: 3908,
-        amt: 2000,
-    },
-    {
-        name: 'Page E',
-        uv: 1890,
-        pv: 4800,
-        amt: 2181,
-    },
-    {
-        name: 'Page F',
-        uv: 2390,
-        pv: 3800,
-        amt: 2500,
-    },
-    {
-        name: 'Page G',
-        uv: 3490,
-        pv: 4300,
-        amt: 2100,
-    },
-];
+import CrimeChart from './chart/CrimeChart';
+import CrimeChartBar from './chart/CrimeChartBar';
+import axios from 'axios';
+import CrimeChartCompose from './chart/CrimeChartCompose';
+import './App.css';
+
+// import ChartTest from './chart/ChartTest';
+// import ChartInteractions from './chart/ChartInteractions';
+const standard_day = 2014
+
 function App() {
-    const [data, setData] = useState(OriginData);
-    const [cnt, setCnt] = useState(0);
+    // const [data, setData] = useState([]);
+    const [data2,setData2] = useState([]);
+    const [data_year, setData_year] = useState([]);
+    const [year_list, setYear_list] = useState([0]);//2014가 0임
+    // const [cnt, setCnt] = useState(0);
+    // useEffect(() => {
+    //     axios.get('/v1/testData')
+    //     .then(res=>{
+    //         setData(res.data);
+    //     }).catch(err=>{
+    //         console.error(err);
+    //     });
+    // },[])
+
+    useEffect(() => {
+        axios.get('/v1/crimedata/incheon')
+        .then(res=>{
+            const year_Data = per_year_crime(res.data, year_list)
+            // res.data.slice(0,12);            
+            setData2(res.data);
+            setData_year(year_Data);
+        }).catch(err=>{
+            console.error(err);
+        });
+    },[])
+
+    const toggle_year = (e)=>{
+        const num = parseInt(e.target.innerText) - standard_day;
+        const year_Data = data2.slice(num*12, (num+1) * 12);
+        const new_year_list = year_list;
+
+        console.log(new_year_list);
+        if(new_year_list.some(year=> year === num)){
+            const delIdx = new_year_list.findIndex(year=>year === num);
+            if(delIdx >-1){
+                new_year_list.splice(delIdx,1);
+            }
+            console.log('이미 있음 -> 제거');
+
+        }else{
+            new_year_list.push(num);
+            setYear_list(new_year_list);
+            setYear_list.sort(function(a,b)
+            {return a - b;});
+            console.log('추가');
+        }
+        console.log(new_year_list);
+
+        setData_year(year_Data);
+    }
+
+    const per_year_crime = (crimeList, list)=>{
+        const year_Data = [];
+        list.forEach(year_idx=>{
+            crimeList.slice(year_idx*12, (year_idx+1) * 12).forEach(item=>{
+                year_Data.push(item);
+            })
+        })
+        return year_Data;
+    }
     return (
         <div>
-            <button
-                onClick={(e) => {
-                    e.preventDefault();
-                    setCnt(cnt + 1);
-                    setData(
-                        data.concat({
-                            name: 'Page ' + cnt,
-                            uv: 500 + 200 * cnt,
-                            pv: 700 + 400 * cnt,
-                        })
-                    );
-                }}
-            >
-                Click
-            </button>
             <div>
-                <p>기본 차트</p>
-                <ChartTest data={data} />
+                <CrimeChart  data={data2}/>
             </div>
             <div>
-                <p>상호작용 추가</p>
-                <ChartInteractions data={data} />
+                <span className="year-change" onClick={toggle_year}>
+                    2014
+                </span>
+                <span className="year-change" onClick={toggle_year}>
+                    2015
+                </span>
+                <span className="year-change" onClick={toggle_year}>
+                    2016
+                </span>
+                <span className="year-change" onClick={toggle_year}>
+                    2017
+                </span>
+                <span className="year-change" onClick={toggle_year}>
+                    2018
+                </span>
+                <CrimeChartBar data = {data_year}/>
+            </div>
+            <div>
+                <CrimeChartCompose data = {data2}/>
             </div>
         </div>
     );
